@@ -14,6 +14,7 @@ limitations under the License.
 ==============================================================================*/
 #include "tensorflow/contrib/lite/python/interpreter_wrapper/interpreter_wrapper.h"
 
+#include <dlfcn.h>
 #include <sstream>
 #include <string>
 
@@ -91,6 +92,41 @@ class PythonErrorReporter : public tflite::ErrorReporter {
 };
 
 namespace {
+
+using GetTfLiteRegistrationPtr = TfLiteRegistration* (*)();
+
+void RegisterCustomOps(tflite::ops::builtin::BuiltinOpResolver* resolver) {
+  const char* tflite_custom_op = std::getenv("TFLITE_CUSTOM_OP");
+  if (!tflite_custom_op)
+    return;
+
+  const char* first = std::strstr(tflite_custom_op, ":");
+  if (!first)
+    return;
+  const auto library_path = std::string(tflite_custom_op, first);
+
+  const char* second = std::strstr(first + 1, ":");
+  if (!second)
+    return;
+  const auto operation_name = std::string(first + 1, second);
+
+  const auto get_registration_symbol = std::string(second + 1);
+
+  void *handle = dlopen(library_path.c_str(), RTLD_LAZY);
+  if (!handle)
+    return;
+
+  auto get_registration = reinterpret_cast<GetTfLiteRegistrationPtr>(
+      dlsym(handle, get_registration_symbol.c_str()));
+  if (!get_registration)
+    return;
+
+  auto* registration = get_registration();
+  if (!registration)
+    return;
+
+  resolver->AddCustom(operation_name.c_str(), registration);
+}
 
 // Calls PyArray's initialization to initialize all the API pointers. Note that
 // this usage implies only this translation unit can use the pointers. See
@@ -194,6 +230,7 @@ InterpreterWrapper* InterpreterWrapper::CreateInterpreterWrapper(
   }
 
   auto resolver = absl::make_unique<tflite::ops::builtin::BuiltinOpResolver>();
+  RegisterCustomOps(resolver.get());
   auto interpreter = CreateInterpreter(model.get(), *resolver);
   if (!interpreter) {
     *error_msg = error_reporter->message();

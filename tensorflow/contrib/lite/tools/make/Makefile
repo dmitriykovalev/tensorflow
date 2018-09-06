@@ -190,7 +190,7 @@ $(BENCHMARK_LIB) : $(LIB_PATH) $(BENCHMARK_OBJS)
 	$(AR) $(ARFLAGS) $(BENCHMARK_LIB) $(LIB_OBJS) $(BENCHMARK_OBJS)
 
 benchmark_lib: $(BENCHMARK_LIB)
-$(info $(BENCHMARK_BINARY))
+
 $(BENCHMARK_BINARY) : $(BENCHMARK_LIB)
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) \
@@ -212,5 +212,11 @@ cleantarget:
 
 $(DEPDIR)/%.d: ;
 .PRECIOUS: $(DEPDIR)/%.d
+
+libdir:
+	@echo $(LIBDIR)
+
+downloadsdir:
+	@echo $(MAKEFILE_DIR)/downloads
 
 -include $(patsubst %,$(DEPDIR)/%.d,$(basename $(TF_CC_SRCS)))
