@@ -19,19 +19,24 @@ from __future__ import print_function
 
 import sys
 import numpy as np
-from tensorflow.python.util.lazy_loader import LazyLoader
 
-# Lazy load since some of the performance benchmark skylark rules
-# break dependencies. Must use double quotes to match code internal rewrite
-# rule.
-# pylint: disable=g-inconsistent-quotes
-_interpreter_wrapper = LazyLoader(
-    "_interpreter_wrapper", globals(),
-    "tensorflow.contrib.lite.python.interpreter_wrapper."
-    "tensorflow_wrap_interpreter_wrapper")
-# pylint: enable=g-inconsistent-quotes
+try:
+  from tensorflow.python.util.lazy_loader import LazyLoader
 
-del LazyLoader
+  # Lazy load since some of the performance benchmark skylark rules
+  # break dependencies. Must use double quotes to match code internal rewrite
+  # rule.
+  # pylint: disable=g-inconsistent-quotes
+  _interpreter_wrapper = LazyLoader(
+      "_interpreter_wrapper", globals(),
+      "tensorflow.contrib.lite.python.interpreter_wrapper."
+      "tensorflow_wrap_interpreter_wrapper")
+  # pylint: enable=g-inconsistent-quotes
+
+  del LazyLoader
+except ImportError:
+  # When tensorflow is not available.
+  from tensorflow.contrib.lite.python import interpreter_wrapper as _interpreter_wrapper
 
 
 class Interpreter(object):

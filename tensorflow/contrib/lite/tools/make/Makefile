@@ -222,4 +222,7 @@ cleantarget:
 $(DEPDIR)/%.d: ;
 .PRECIOUS: $(DEPDIR)/%.d
 
+libdir:
+	@echo $(LIBDIR)
+
 -include $(patsubst %,$(DEPDIR)/%.d,$(basename $(ALL_SRCS)))
